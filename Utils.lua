@@ -88,11 +88,13 @@ Utils.getAllSpells = function ()
 end
 
 Utils.createButton = function( ... )
-  local parent, pos1, pos2, ox, oy, w, h, text, onClick = ...
+  local parent, pos1, pos2, ox, oy, w, h, text, onClick, font = ...
   local button = CreateFrame("Button", nil, parent, "GameMenuButtonTemplate")
   button:SetPoint(pos1, parent, pos2, ox, oy)
   button:SetSize(w, h)
   button:SetText(text)
+
+  if font then button:SetNormalFontObject(font) end
 
   if onClick then
     button:RegisterForClicks("AnyUp")

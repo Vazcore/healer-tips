@@ -1,5 +1,12 @@
 Menu = { sections = {} }
+Menu.sectionsOrder = { aoe = 1, tankInDanger = 2, moderateDamage = 3, noMana = 4, buffsOnTank = 5 }
 Menu.frame = nil
+Menu.tabs = { dangerLevel = "dangerLevel", buffControl = "buffControl" }
+Menu.activeTab = Menu.tabs.dangerLevel
+
+Menu.fonts = { normal = CreateFont("normalBtnFont"), activeTabFont = CreateFont("activeTabFont")}
+Menu.fonts.normal:SetTextColor(1, 1, 1)
+Menu.fonts.activeTabFont:SetTextColor(0.1, 0.7, 0.15)
 
 local function initUserData()
   if UserData == nil or UserData.sections == nil then
@@ -28,8 +35,9 @@ local function WriteUserData()
   for i = 1, table.getn(Menu.sections) do
     -- categories
     local sectionSpells = {}
+    Utils.print(i)
     for j = 1, table.getn(Menu.sections[i].selectedSpells.list) do
-      -- spells
+      -- spells      
       table.insert(sectionSpells, Menu.sections[i].selectedSpells.list[j].spell)
     end
     table.insert(UserData.sections, sectionSpells)
@@ -52,14 +60,6 @@ local function onSelectSpell(sectionFrame)
 end
 
 local function onDeleteSelectedSpell(self, btn)
-  Utils.print("Clicked" .. " - " .. self.index)
-  -- local section = Menu.frame[self.sectionId] or {}
-  -- for i = 1, section.selectedSpells.list do
-  --   local el = section.selectedSpells.list[i]
-  --   if (el.spell == self.spell) then
-      
-  --   end
-  -- end
   self.spell = nil
   self.texture:SetTexture(nil)
   WriteUserData()
@@ -96,8 +96,8 @@ local function onClearSpells(frame)
   return onClearAllSpells
 end
 
-local function createMenuSection(name, title, posY)
-  local section = Utils.createFrame(Menu.frame, name, "ThinBorderTemplate", "TOP", "TOP", 0, posY, 570, 120)
+local function createMenuSection(name, title, posY, parent)
+  local section = Utils.createFrame(parent, name, "ThinBorderTemplate", "TOP", "TOP", 0, posY, 570, 120)
   section.title =  Utils.createFontString(section, title)
   
   section.selectedSpells = Utils.createFrame(
@@ -125,15 +125,65 @@ local function onGlobalEvents(self, event)
   end
 end
 
+local function changeTabBtnStyle(btn, font)
+  btn:SetNormalFontObject(font)
+end
+
+local function onChangeTab(tabName)
+  return function ()
+    Menu.frame.tabsContent[Menu.activeTab]:Hide()
+    changeTabBtnStyle(Menu.frame.tabs[Menu.activeTab], Menu.fonts.normal)
+    changeTabBtnStyle(Menu.frame.tabs[tabName], Menu.fonts.activeTabFont)
+    Menu.activeTab = tabName
+    Menu.frame.tabsContent[Menu.activeTab]:Show()
+  end
+end
+
+local function CreateTabs(parent)
+  parent.tabs = {}
+  parent.tabs[Menu.tabs.dangerLevel] = Utils.createButton(
+    parent, "TOPLEFT", "TOPLEFT", 10, -30, 90, 25,
+    "Danger Level", onChangeTab(Menu.tabs.dangerLevel)
+  )
+  parent.tabs[Menu.tabs.buffControl] = Utils.createButton(
+    parent, "TOPLEFT", "TOPLEFT", 105, -30, 90, 25,
+    "Buff Control", onChangeTab(Menu.tabs.buffControl)
+  )
+
+  changeTabBtnStyle(parent.tabs[Menu.tabs.dangerLevel], Menu.fonts.activeTabFont)
+
+  return parent.tabs
+end
+
+local function createDangerLevelFrameContent(parent)
+  local contentFrame = Utils.createFrame(parent, nil, nil, "CENTER", "CENTER", 3, 5, 580, 580)
+  contentFrame.aoeSection = createMenuSection("aoeSection", "AOE Healing Spells", -60, contentFrame)
+  contentFrame.tankSection = createMenuSection("tankSection", "`Tank in danger` Spells", -190, contentFrame)
+  contentFrame.regularSection = createMenuSection("regularSection", "`Moderate danger` Spells", -320, contentFrame)
+  contentFrame.noManaSection = createMenuSection("noManaSection", "`No mana` Spells", -450, contentFrame)
+  table.insert(Menu.sections, contentFrame.aoeSection)
+  table.insert(Menu.sections, contentFrame.tankSection)
+  table.insert(Menu.sections, contentFrame.regularSection)
+  table.insert(Menu.sections, contentFrame.noManaSection)
+  return contentFrame
+end
+
+local function createBuffControlFrameContent(parent)
+  local contentFrame = Utils.createFrame(parent, nil, nil, "CENTER", "CENTER", 3, 5, 580, 580)
+  contentFrame.buffsOnTank = createMenuSection("buffsOnTank", "Buffs on Tank", -60, contentFrame)
+  table.insert(Menu.sections, contentFrame.buffsOnTank)
+  contentFrame:Hide()
+  return contentFrame
+end
+
 function Menu_Init(self)  
   Menu.frame = Utils.createFrame(UIParent, "HealerTipsMenuFrame", "UIPanelDialogTemplate", "CENTER", "CENTER", 0, 50, 600, 600)
   Menu.frame.title = Utils.createFontString(Menu.frame, "Healer Tips - Menu")
-  
-  Menu.frame.aoeSection = createMenuSection("aoeSection", "AOE Healing Spells", -40)
-  Menu.frame.tankSection = createMenuSection("tankSection", "`Tank in danger` Spells", -170)
-  Menu.frame.regularSection = createMenuSection("regularSection", "`Moderate danger` Spells", -300)
-  Menu.frame.noManaSection = createMenuSection("noManaSection", "`No mana` Spells", -450)
-  Menu.sections = { Menu.frame.aoeSection, Menu.frame.tankSection, Menu.frame.regularSection, Menu.frame.noManaSection }
+  Menu.frame.tabs = CreateTabs(Menu.frame)
+
+  Menu.frame.tabsContent = {}
+  Menu.frame.tabsContent[Menu.tabs.dangerLevel] = createDangerLevelFrameContent(Menu.frame)
+  Menu.frame.tabsContent[Menu.tabs.buffControl] = createBuffControlFrameContent(Menu.frame)
 
   self:RegisterEvent("ADDON_LOADED")
   self:SetScript("OnEvent", onGlobalEvents)

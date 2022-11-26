@@ -103,16 +103,16 @@ local function manageQueue()
   local players = getPlayers(playersIds)
   if (isTankInDanger(players)) then
     -- add spells to protect a tank
-    getAvailableSpells(Menu.frame.tankSection.selectedSpells.list)
+    getAvailableSpells(Menu.sections[Menu.sectionsOrder.tankInDanger].selectedSpells.list)
   elseif (isBigAOEDamage(players)) then
     -- add spells for AOE damage
-    getAvailableSpells(Menu.frame.aoeSection.selectedSpells.list)
+    getAvailableSpells(Menu.sections[Menu.sectionsOrder.aoe].selectedSpells.list)
   elseif (selfLowMana()) then
     -- add spells for low mana
-    getAvailableSpells(Menu.frame.noManaSection.selectedSpells.list)
+    getAvailableSpells(Menu.sections[Menu.sectionsOrder.noMana].selectedSpells.list)
   else
     -- all other cases (regular danger)
-    getAvailableSpells(Menu.frame.regularSection.selectedSpells.list)
+    getAvailableSpells(Menu.sections[Menu.sectionsOrder.moderateDamage].selectedSpells.list)
   end
 end
 
