@@ -1,0 +1,12 @@
+## Interface: 100002
+## Title: HealerTips
+## Version: 0.0.1
+## Author: Oleksii Habrusiev
+## SavedVariablesPerCharacter: UserData
+
+Utils.lua
+Menu.lua
+RulesController.lua
+QueueController.lua
+Main.lua
+Icon.xml
