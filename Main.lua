@@ -9,10 +9,10 @@ local function initConsoleCommands(self)
   end
 end
 
-local function initSpellIcon(self)
-  local spell = CreateFrame("Frame", "HLBSpellItem", UIParent)
+local function initSpellIcon(self, name, posx, posy)
+  local spell = CreateFrame("Frame", ("HLBSpellItem_" .. name), UIParent)
   spell:SetSize(50, 50)
-  spell:SetPoint("CENTER", UIParent, "CENTER", 0, -180)
+  spell:SetPoint("CENTER", UIParent, "CENTER", posx, posy)
   spell.texture = spell:CreateTexture(nil, "BACKGROUND")
   spell.texture:SetSize(50,50)
   spell.texture:SetPoint("TOP", spell, "TOP")
@@ -25,5 +25,6 @@ end
 function Init(self)
   self:SetPoint("TOP", UIParent, "TOP")
   initConsoleCommands(self)
-  initSpellIcon(self)
+  initSpellIcon(self, "spell", 0, -180)
+  --initSpellIcon(self, "additional1", 50, -180)
 end

@@ -103,3 +103,29 @@ Utils.createButton = function( ... )
   
   return button
 end
+
+Utils.findInArrayByPropertyValue = function (array, prop, value)
+  local foundElement = nil
+  for i = 1, table.getn(array) do
+    if (array[i][prop] == value) then
+      foundElement = array[i]
+      break
+    end
+  end
+  return foundElement
+end
+
+Utils.findManyInArrayByPropertyValue = function (array, prop, value)
+  local foundElements = {}
+  for i = 1, table.getn(array) do
+    if (array[i][prop] == value) then
+      table.insert(foundElements, array[i])
+    end
+  end
+  return foundElements
+end
+
+Utils.playSound = function (fileName)
+  local fname = fileName .. ".ogg"
+  PlaySoundFile("Interface\\AddOns\\HealerTips\\audio\\" .. fname, "Dialog")
+end
