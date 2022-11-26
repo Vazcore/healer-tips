@@ -16,15 +16,17 @@ local function initSpellIcon(self, name, posx, posy)
   spell.texture = spell:CreateTexture(nil, "BACKGROUND")
   spell.texture:SetSize(50,50)
   spell.texture:SetPoint("TOP", spell, "TOP")
-  spell.texture:SetTexture(GetSpellTexture(51505))
+  spell.texture:SetTexture(GetSpellTexture(nil))
+  spell.spellId = nil
 
   spell:Show()
-  Queue.spell = spell
+  Queue[name] = spell
 end
 
 function Init(self)
   self:SetPoint("TOP", UIParent, "TOP")
   initConsoleCommands(self)
-  initSpellIcon(self, "spell", 0, -180)
-  --initSpellIcon(self, "additional1", 50, -180)
+  initSpellIcon(self, Queue.spellIndications[2], -50, -180)
+  initSpellIcon(self, Queue.spellIndications[1], 10, -180)  
+  initSpellIcon(self, Queue.spellIndications[3], 70, -180)
 end

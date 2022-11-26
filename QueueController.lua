@@ -2,13 +2,18 @@ Queue = {}
 Queue.spell = nil
 Queue.isRunning = false
 Queue.queue = {}
-Queue.intervalSeconds = 2
+Queue.intervalSeconds = 1
 Queue.currentIntervalTime = 0
+Queue.voiceintervalSeconds = 2
+Queue.currentVoiceIntervalTime = 0
 Queue.isRaid = false
 Queue.isRaidOrGroup = false
 Queue.numPlayers = 0
 Queue.lastSpellId = 0
+Queue.lastSpellIdAttempts = 0
+Queue.lastSpellIdLimit = 2
 Queue.config = { aoeHealth = 50, tankDangerousHealth = 40, lowMana = 70 }
+Queue.spellIndications = { "spell", "additionalSpell1", "additionalSpell2" }
 
 local ROLES = { tank = "TANK", healer = "HEALER", dps = "DAMAGER", none = "NONE" }
 
@@ -118,10 +123,15 @@ local function getAvailableSpells(spells)
     activeTotemSpellId = spellID
   end
 
+  Queue.queue = {}
+
   for i = 1, table.getn(spells) do
     if (spells[i].spell and isSpellReadyToUse(spells[i].spell) and activeTotemSpellId ~= spells[i].spell) then
-      table.insert(Queue.queue, createQueueElement(spells[i].spell))
-      break
+      if (Queue.spellIndications[i]) then
+        table.insert(Queue.queue, createQueueElement(spells[i].spell))
+      else
+        break
+      end      
     end
   end
 end
@@ -184,35 +194,72 @@ local function manageQueue()
   end
 end
 
+local function clearAllIndications()
+  for i = 1, table.getn(Queue.spellIndications) do
+    local spellIcon = Queue[Queue.spellIndications[i]]
+    spellIcon.texture:SetTexture(nil)
+  end
+end
+
+local function findSpellInIndications(spellId)
+  local isFound = false
+  for i = 1, table.getn(Queue.spellIndications) do
+    local spellIcon = Queue[Queue.spellIndications[i]]
+    if (spellIcon.spellId == spellId) then
+      isFound = true
+      break
+    end
+  end
+
+  return isFound
+end
+
 local function executeQueue()
   if (Queue.isRunning == true) then
     return
   end
   Queue.isRunning = true
-  local firstElement = Queue.queue[1]
-  if (firstElement) then
-    Queue.spell:Show()
-    Queue.spell.texture:SetTexture(GetSpellTexture(firstElement.spellId))
+  
+  clearAllIndications()
 
-    if (Queue.lastSpellId ~= firstElement.spellId) then
-      Utils.playSound(firstElement.spellId)
-    end
-    
-    Queue.lastSpellId = firstElement.spellId
-  else
-    Queue.spell:Hide()
-    Queue.lastSpellId = 0
-  end  
+  for i = 1, table.getn(Queue.queue) do
+    local spellIcon = Queue[Queue.spellIndications[i]]
+    spellIcon.texture:SetTexture(GetSpellTexture(Queue.queue[i].spellId))
+    spellIcon.spellId = Queue.queue[i].spellId
+  end
   Queue.isRunning = false
 end
 
-local function onUpdateTick(frame, elapsed)
+local function executeVoiceMessages()
+  local voiceElement = Queue.queue[1]
+  if (voiceElement) then
+    if (Queue.lastSpellId ~= voiceElement.spellId) then
+      Utils.playSound(voiceElement.spellId)
+    else
+      -- reset voice attempts
+      Queue.lastSpellIdAttempts = Queue.lastSpellIdAttempts + 1
+      if Queue.lastSpellIdAttempts >= Queue.lastSpellIdLimit then
+        Queue.lastSpellIdAttempts = 0
+        Queue.lastSpellId = nil
+      end
+    end
+    Queue.lastSpellId = voiceElement.spellId
+  end
+end
+
+local function onUpdateTick(frame, elapsed)  
   Queue.currentIntervalTime = Queue.currentIntervalTime + elapsed
+  Queue.currentVoiceIntervalTime = Queue.currentVoiceIntervalTime + elapsed
   if Queue.currentIntervalTime >= Queue.intervalSeconds --[[and Queue.isRaidOrGroup--]] then
     Queue.currentIntervalTime = 0
     -- execute methods
     manageQueue()
     executeQueue()
+  end
+
+  if ( Queue.currentVoiceIntervalTime >= Queue.voiceintervalSeconds) then
+    Queue.currentVoiceIntervalTime = 0
+    executeVoiceMessages()
   end
 end
 
@@ -220,18 +267,16 @@ local function onPartyChange()
   Utils.print("Party size has been changed")
 
   local isRaid = false
-  local numPlayersInGroup = GetNumGroupMembers()
-  local numPlayersInRaid = GetNumRaidMembers()
-  local numPlayers = 0
-  if (numPlayersInGroup > 0) then
-    isRaid = false
-    numPlayers = numPlayersInGroup
+  local numPlayersInGroupHome = GetNumGroupMembers(1)
+  local numPlayersInGroupInstance = GetNumGroupMembers(2)
+  local numPlayers = numPlayersInGroupHome
+  if (numPlayersInGroupInstance > numPlayersInGroupHome) then
+    numPlayers = numPlayersInGroupInstance
   end
 
-  if (numPlayersInRaid > 0) then
+  if (numPlayers > 5) then
     isRaid = true
-    numPlayers = numPlayersInRaid
-  end
+  end 
 
   Queue.isRaid = isRaid
   Queue.isRaidOrGroup = numPlayers > 0
